@@ -213,6 +213,7 @@ class GeneratorInterface:
         alpha_presence_src: float = 0.0,
         alpha_frequency_src: float = 0.0,
         alpha_src_penalty_end_idx: int = -1,
+        collect_metrics: bool = False,
     ):
         """
         Generate from sequences.
@@ -248,6 +249,7 @@ class GeneratorInterface:
             incoming context
         alpha_src_penalty_end_idx: index of the last token in incoming
             context to consider for repetition penalty
+        collect_metrics: collect efficiency metrics (latency, memory, etc.)
         """
         if seed:
             utils.set_torch_seed(seed)
@@ -317,6 +319,7 @@ class GeneratorInterface:
                 "alpha_presence_src": alpha_presence_src,
                 "alpha_frequency_src": alpha_frequency_src,
                 "alpha_src_penalty_end_idx": alpha_src_penalty_end_idx,
+                "collect_metrics": collect_metrics,
             }
             generator = self.task.build_generator(
                 self.models,
@@ -411,6 +414,9 @@ class GeneratorInterface:
 
                     else:
                         result["top_logprobs"] = None
+
+                    if "metrics" in translations:
+                        result["metrics"] = translations["metrics"]
 
                     beams.append(result)
                 retval.append(beams)
