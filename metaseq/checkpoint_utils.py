@@ -300,6 +300,15 @@ def load_checkpoint(cfg: CheckpointConfig, trainer, **passthrough_args):
     # make sure everyone is done downloading their checkpoints before we load
     distributed_utils.global_barrier()
 
+    if reset_dataloader and best_checkpoint is not None and int(os.environ.get("SLURM_RESTART_COUNT", 0)) > 0:
+        logger.info(
+            f"Disregarding --reset-dataloader and --reset-meters since we are continuing past a requeue"
+        )
+        reset_dataloader = False
+        reset_meters = False
+        reset_optimizer = False
+        reset_lr_scheduler = False
+
     extra_state = trainer.load_checkpoint(
         checkpoint_path_to_load,
         reset_optimizer,
@@ -308,11 +317,6 @@ def load_checkpoint(cfg: CheckpointConfig, trainer, **passthrough_args):
         reset_meters=reset_meters,
     )
 
-    if reset_dataloader and best_checkpoint is not None and int(os.environ.get("SLURM_RESTART_COUNT", 0)) > 0:
-        logger.info(
-            f"Disregarding --reset-dataloader since we are continuing past a requeue"
-        )
-        reset_dataloader = False
     if extra_state is not None and not reset_dataloader:
         # restore iterator from checkpoint
         itr_state = extra_state["train_iterator"]
